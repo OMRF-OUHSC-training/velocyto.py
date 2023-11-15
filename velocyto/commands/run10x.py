@@ -75,17 +75,27 @@ def run10x(samplefolder: str, gtffile: str,
 
     GTFFILE genome annotation file
     """
+    out_dir = os.path.join(samplefolder, "outs")
+
+    # If cellranger count style
+    if os.path.isdir(out_dir):
+        bamfile = os.path.join(out_dir, "possorted_genome_bam.bam")
+    # Otherwise try multi output directories and bam file names
+    else:
+        out_dir = os.path.join(samplefolder, "counts")
+        bamfile = os.path.join(out_dir, "sample_alignments.bam")
 
     # Check that the 10X analysis was run successfully
     if not os.path.isfile(os.path.join(samplefolder, "_log")):
         logging.error("This is an older version of cellranger, cannot check if the output are ready, make sure of this yourself")
     elif "Pipestance completed successfully!" not in open(os.path.join(samplefolder, "_log")).read():
         logging.error("The outputs are not ready")
-    bamfile = os.path.join(samplefolder, "outs", "possorted_genome_bam.bam")
 
-    bcmatches = glob.glob(os.path.join(samplefolder, os.path.normcase("outs/filtered_gene_bc_matrices/*/barcodes.tsv")))
+    bcmatches = glob.glob(os.path.join(out_dir, os.path.normcase("filtered_gene_bc_matrices/*/barcodes.tsv")))
     if len(bcmatches) == 0:
-        bcmatches = glob.glob(os.path.join(samplefolder, os.path.normcase("outs/filtered_feature_bc_matrix/barcodes.tsv.gz")))
+        bcmatches = glob.glob(os.path.join(out_dir, os.path.normcase("filtered_feature_bc_matrix/barcodes.tsv.gz")))
+    if len(bcmatches) == 0:
+        bcmatches = glob.glob(os.path.join(out_dir, os.path.normcase("sample_filtered_feature_bc_matrix/barcodes.tsv.gz")))
     if len(bcmatches) == 0:
         logging.error("Can not locate the barcodes.tsv file!")
     bcfile = bcmatches[0]
@@ -95,13 +105,13 @@ def run10x(samplefolder: str, gtffile: str,
     assert not os.path.exists(os.path.join(outputfolder, f"{sampleid}.loom")), "The output already exist. Aborted!"
     additional_ca = {}
     try:
-        tsne_file = os.path.join(samplefolder, "outs", "analysis", "tsne", "2_components", "projection.csv")
+        tsne_file = os.path.join(out_dir, "analysis", "tsne", "2_components", "projection.csv")
         if os.path.exists(tsne_file):
             tsne = np.loadtxt(tsne_file, usecols=(1, 2), delimiter=',', skiprows=1)
             additional_ca["_X"] = tsne[:, 0].astype('float32')
             additional_ca["_Y"] = tsne[:, 1].astype('float32')
 
-        clusters_file = os.path.join(samplefolder, "outs", "analysis", "clustering", "graphclust", "clusters.csv")
+        clusters_file = os.path.join(out_dir, "analysis", "clustering", "graphclust", "clusters.csv")
         if os.path.exists(clusters_file):
             labels = np.loadtxt(clusters_file, usecols=(1, ), delimiter=',', skiprows=1)
             additional_ca["Clusters"] = labels.astype('int') - 1
