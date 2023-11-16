@@ -82,7 +82,7 @@ def run10x(samplefolder: str, gtffile: str,
         bamfile = os.path.join(out_dir, "possorted_genome_bam.bam")
     # Otherwise try multi output directories and bam file names
     else:
-        out_dir = os.path.join(samplefolder, "counts")
+        out_dir = os.path.join(samplefolder, "count")
         bamfile = os.path.join(out_dir, "sample_alignments.bam")
 
     # Check that the 10X analysis was run successfully
